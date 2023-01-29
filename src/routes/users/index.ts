@@ -28,13 +28,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: { id },
       } = request;
 
-      const uuidRegExp =
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
-      const isValidId = uuidRegExp.test(id);
+      const user = await fastify.db.users.findOne({ key: 'id', equals: id });
 
-      if (isValidId) {
-        const user = await fastify.db.users.findOne({ key: 'id', equals: id });
-
+      if (user) {
         return reply.send(user);
       }
 
@@ -75,8 +71,50 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const isValidId = uuidRegExp.test(id);
 
       if (isValidId) {
-        const deleteOperation = await fastify.db.users.delete(id);
-        return reply.send(deleteOperation);
+        const user = await fastify.db.users.findOne({ key: 'id', equals: id });
+
+        if (user) {
+          const profile = await fastify.db.profiles.findOne({
+            key: 'userId',
+            equals: id,
+          });
+
+          const posts = await fastify.db.posts.findMany({
+            key: 'userId',
+            equals: id,
+          });
+
+          const followers = await fastify.db.users.findMany({
+            key: 'subscribedToUserIds',
+            inArray: id,
+          });
+
+          if (profile) {
+            await fastify.db.profiles.delete(profile.id);
+          }
+
+          if (posts.length) {
+            posts.forEach(
+              async (post) => await fastify.db.posts.delete(post.id)
+            );
+          }
+
+          if (followers.length) {
+            followers.forEach(async (follower) => {
+              const updatedFollower = follower.subscribedToUserIds.filter(
+                (f) => f !== id
+              );
+
+              await fastify.db.users.change(follower.id, {
+                subscribedToUserIds: updatedFollower,
+              });
+            });
+          }
+
+          const deleteOperation = await fastify.db.users.delete(id);
+          return reply.send(deleteOperation);
+        }
+        throw fastify.httpErrors.notFound('User is not found');
       }
 
       throw fastify.httpErrors.badRequest('Uuid is not valid');
@@ -94,12 +132,32 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply): Promise<UserEntity> {
       const {
         body: { userId },
+        params: { id },
       } = request;
-      const subscriber = (await fastify.db.users.findOne({
+
+      const subscriber = await fastify.db.users.findOne({
+        key: 'id',
+        equals: id,
+      });
+
+      const subscribeTo = await fastify.db.users.findOne({
         key: 'id',
         equals: userId,
-      })) as UserEntity;
-      return await fastify.db.users.change(userId, subscriber);
+      });
+
+      if (subscriber && subscribeTo) {
+        const updatedSubscribedToUserIds = [
+          ...subscribeTo.subscribedToUserIds,
+          id,
+        ];
+        const changedUser = await fastify.db.users.change(userId, {
+          subscribedToUserIds: updatedSubscribedToUserIds,
+        });
+
+        return reply.send(changedUser);
+      }
+
+      throw fastify.httpErrors.notFound('Not found');
     }
   );
 
@@ -114,12 +172,32 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply): Promise<UserEntity> {
       const {
         body: { userId },
+        params: { id },
       } = request;
-      const subscriber = (await fastify.db.users.findOne({
+
+      const subscriber = await fastify.db.users.findOne({
+        key: 'id',
+        equals: id,
+      });
+
+      const unSubscribeFrom = await fastify.db.users.findOne({
         key: 'id',
         equals: userId,
-      })) as UserEntity;
-      return await fastify.db.users.change(userId, subscriber);
+      });
+
+      if (subscriber && unSubscribeFrom) {
+        if (unSubscribeFrom.subscribedToUserIds.includes(id)) {
+          const updatedSubscribedToUserIds =
+            unSubscribeFrom.subscribedToUserIds.filter((el) => el !== id);
+          const changedUser = await fastify.db.users.change(userId, {
+            subscribedToUserIds: updatedSubscribedToUserIds,
+          });
+
+          return reply.send(changedUser);
+        }
+      }
+
+      throw fastify.httpErrors.badRequest('Bad request');
     }
   );
 
