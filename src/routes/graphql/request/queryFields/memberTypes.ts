@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { GraphQLObjectType, GraphQLID, GraphQLInt, GraphQLList } from 'graphql';
 
-const MemberType = new GraphQLObjectType({
+export const MemberType = new GraphQLObjectType({
   name: 'MemberType',
   fields: () => ({
     id: { type: GraphQLID },
@@ -39,6 +39,7 @@ export const MemberTypesQueryField = {
     fastify: FastifyInstance
   ) => {
     const types = await fastify.db.memberTypes.findMany();
+
     return types;
   },
 };

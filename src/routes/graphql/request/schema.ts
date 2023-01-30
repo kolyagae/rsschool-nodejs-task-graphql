@@ -15,6 +15,8 @@ import {
 } from './queryFields/profiles';
 import {
   createUser,
+  subscribeToUser,
+  unsubscribeFrom,
   UserQueryField,
   UsersQueryField,
 } from './queryFields/users';
@@ -22,11 +24,8 @@ import {
 const Mutation = new GraphQLObjectType({
   name: 'Mutation',
   fields: {
-    // memberTypes: MemberTypesQueryField,
-    // posts: PostsQueryField,
-    // profiles: ProfilesQueryField,
-    // users: UsersQueryField,
-    // memberType: MemberTypeQueryField,
+    subscribeToUser: subscribeToUser,
+    unsubscribeFrom: unsubscribeFrom,
     addUser: createUser,
     addProfile: createProfile,
     addPost: createPost,

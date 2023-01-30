@@ -9,7 +9,7 @@ import {
 } from 'graphql';
 import { PostEntity } from '../../../../utils/DB/entities/DBPosts';
 
-const PostType = new GraphQLObjectType({
+export const PostType = new GraphQLObjectType({
   name: 'PostType',
   fields: () => ({
     id: { type: GraphQLID },

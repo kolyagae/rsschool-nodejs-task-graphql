@@ -10,7 +10,7 @@ import {
 } from 'graphql';
 import { ProfileEntity } from '../../../../utils/DB/entities/DBProfiles';
 
-const ProfileType = new GraphQLObjectType({
+export const ProfileType = new GraphQLObjectType({
   name: 'ProfileType',
   fields: () => ({
     id: { type: GraphQLID },
@@ -54,6 +54,7 @@ export const ProfilesQueryField = {
     fastify: FastifyInstance
   ) => {
     const profiles = await fastify.db.profiles.findMany();
+
     return profiles;
   },
 };
