@@ -4,7 +4,10 @@ import {
   GraphQLID,
   GraphQLList,
   GraphQLString,
+  GraphQLInputObjectType,
+  GraphQLNonNull,
 } from 'graphql';
+import { UserEntity } from '../../../../utils/DB/entities/DBUsers';
 
 const UserType = new GraphQLObjectType({
   name: 'UserType',
@@ -45,5 +48,32 @@ export const UsersQueryField = {
     const users = await fastify.db.users.findMany();
 
     return users;
+  },
+};
+
+type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
+
+const CreateUserType = new GraphQLInputObjectType({
+  name: 'CreateUserType',
+  fields: () => ({
+    firstName: { type: new GraphQLNonNull(GraphQLString) },
+    lastName: { type: new GraphQLNonNull(GraphQLString) },
+    email: { type: new GraphQLNonNull(GraphQLString) },
+  }),
+});
+
+export const createUser = {
+  type: UserType,
+  args: {
+    values: { type: CreateUserType },
+  },
+  resolve: async (
+    _: any,
+    { values }: { values: CreateUserDTO },
+    fastify: FastifyInstance
+  ) => {
+    const newUser = await fastify.db.users.create(values);
+
+    return newUser;
   },
 };
