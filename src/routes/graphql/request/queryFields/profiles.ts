@@ -111,3 +111,45 @@ export const createProfile = {
     );
   },
 };
+
+type ChangeProfileDTO = Partial<Omit<ProfileEntity, 'id' | 'userId'>>;
+
+const ChangeProfileType = new GraphQLInputObjectType({
+  name: 'ChangeProfileType',
+  fields: () => ({
+    avatar: { type: GraphQLString },
+    sex: { type: GraphQLString },
+    birthday: { type: GraphQLInt },
+    country: { type: GraphQLString },
+    street: { type: GraphQLString },
+    city: { type: GraphQLString },
+    memberTypeId: { type: GraphQLString },
+    userId: { type: GraphQLID },
+  }),
+});
+
+export const changeProfile = {
+  type: ProfileType,
+  args: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    values: { type: ChangeProfileType },
+  },
+  resolve: async (
+    _: any,
+    { id, values }: { id: string; values: ChangeProfileDTO },
+    fastify: FastifyInstance
+  ) => {
+    const isProfileExists = await fastify.db.profiles.findOne({
+      key: 'id',
+      equals: id,
+    });
+
+    if (isProfileExists) {
+      const updateProfile = await fastify.db.profiles.change(id, { ...values });
+
+      return updateProfile;
+    }
+
+    throw fastify.httpErrors.badRequest('Profile is not existed');
+  },
+};

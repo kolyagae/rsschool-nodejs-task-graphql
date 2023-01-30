@@ -1,5 +1,13 @@
 import { FastifyInstance } from 'fastify';
-import { GraphQLObjectType, GraphQLID, GraphQLInt, GraphQLList } from 'graphql';
+import {
+  GraphQLObjectType,
+  GraphQLID,
+  GraphQLInt,
+  GraphQLList,
+  GraphQLInputObjectType,
+  GraphQLNonNull,
+} from 'graphql';
+import { MemberTypeEntity } from '../../../../utils/DB/entities/DBMemberTypes';
 
 export const MemberType = new GraphQLObjectType({
   name: 'MemberType',
@@ -41,5 +49,42 @@ export const MemberTypesQueryField = {
     const types = await fastify.db.memberTypes.findMany();
 
     return types;
+  },
+};
+
+type ChangeMemberTypeDTO = Partial<Omit<MemberTypeEntity, 'id'>>;
+
+const ChangeMemberType = new GraphQLInputObjectType({
+  name: 'ChangeMemberType',
+  fields: () => ({
+    discount: { type: GraphQLInt },
+    monthPostsLimit: { type: GraphQLInt },
+  }),
+});
+
+export const changeType = {
+  type: MemberType,
+  args: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    values: { type: ChangeMemberType },
+  },
+  resolve: async (
+    _: any,
+    { id, values }: { id: string; values: ChangeMemberTypeDTO },
+    fastify: FastifyInstance
+  ) => {
+    const type = await fastify.db.memberTypes.findOne({
+      key: 'id',
+      equals: id,
+    });
+
+    if (type) {
+      const updatedType = await fastify.db.memberTypes.change(id, {
+        ...values,
+      });
+      return updatedType;
+    }
+
+    throw fastify.httpErrors.badRequest('Type with this id is not exists');
   },
 };

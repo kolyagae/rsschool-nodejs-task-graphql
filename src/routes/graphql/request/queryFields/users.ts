@@ -150,6 +150,42 @@ export const createUser = {
   },
 };
 
+type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;
+
+const ChangeUserType = new GraphQLInputObjectType({
+  name: 'ChangeUserType',
+  fields: () => ({
+    firstName: { type: GraphQLString },
+    lastName: { type: GraphQLString },
+    email: { type: GraphQLString },
+  }),
+});
+
+export const changeUser = {
+  type: UserType,
+  args: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    values: { type: ChangeUserType },
+  },
+  resolve: async (
+    _: any,
+    { id, values }: { id: string; values: ChangeUserDTO },
+    fastify: FastifyInstance
+  ) => {
+    const uuidRegExp =
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+    const isValidId = uuidRegExp.test(id);
+
+    if (isValidId) {
+      const updateUser = await fastify.db.users.change(id, { ...values });
+
+      return updateUser;
+    }
+
+    throw fastify.httpErrors.badRequest('Uuid is not valid');
+  },
+};
+
 const subscribeToUserType = new GraphQLInputObjectType({
   name: 'subscribeToUserType',
   fields: () => ({

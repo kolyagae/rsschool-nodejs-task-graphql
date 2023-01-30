@@ -86,3 +86,38 @@ export const createPost = {
     throw fastify.httpErrors.badRequest('Uuid is not valid');
   },
 };
+
+type ChangePostDTO = Partial<Omit<PostEntity, 'id' | 'userId'>>;
+
+const ChangePostType = new GraphQLInputObjectType({
+  name: 'ChangePostType',
+  fields: () => ({
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    userId: { type: GraphQLString },
+  }),
+});
+
+export const changePost = {
+  type: PostType,
+  args: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    values: { type: ChangePostType },
+  },
+  resolve: async (
+    _: any,
+    { id, values }: { id: string; values: ChangePostDTO },
+    fastify: FastifyInstance
+  ) => {
+    const uuidRegExp =
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+    const isValidId = uuidRegExp.test(id);
+
+    if (isValidId) {
+      const updatedPost = await fastify.db.posts.change(id, { ...values });
+      return updatedPost;
+    }
+
+    throw fastify.httpErrors.badRequest('Uuid is not valid');
+  },
+};
