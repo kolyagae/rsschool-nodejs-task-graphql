@@ -3,8 +3,16 @@ import {
   MemberTypeQueryField,
   MemberTypesQueryField,
 } from './queryFields/memberTypes';
-import { PostQueryField, PostsQueryField } from './queryFields/posts';
-import { ProfileQueryField, ProfilesQueryField } from './queryFields/profiles';
+import {
+  createPost,
+  PostQueryField,
+  PostsQueryField,
+} from './queryFields/posts';
+import {
+  createProfile,
+  ProfileQueryField,
+  ProfilesQueryField,
+} from './queryFields/profiles';
 import {
   createUser,
   UserQueryField,
@@ -19,9 +27,9 @@ const Mutation = new GraphQLObjectType({
     // profiles: ProfilesQueryField,
     // users: UsersQueryField,
     // memberType: MemberTypeQueryField,
-    // post: PostQueryField,
-    // profile: ProfileQueryField,
     addUser: createUser,
+    addProfile: createProfile,
+    addPost: createPost,
   },
 });
 

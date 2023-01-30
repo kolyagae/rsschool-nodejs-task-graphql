@@ -58,8 +58,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         key: 'userId',
         equals: userId,
       });
+      const isUserExists = await fastify.db.users.findOne({
+        key: 'id',
+        equals: userId,
+      });
 
-      if (isValidId && isMemberTypeExists && !isProfileExists) {
+      if (isValidId && isMemberTypeExists && !isProfileExists && isUserExists) {
         const newProfile = await fastify.db.profiles.create(body);
         return reply.send(newProfile);
       }

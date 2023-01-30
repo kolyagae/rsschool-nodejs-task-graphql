@@ -4,7 +4,10 @@ import {
   GraphQLID,
   GraphQLList,
   GraphQLString,
+  GraphQLInputObjectType,
+  GraphQLNonNull,
 } from 'graphql';
+import { PostEntity } from '../../../../utils/DB/entities/DBPosts';
 
 const PostType = new GraphQLObjectType({
   name: 'PostType',
@@ -47,5 +50,39 @@ export const PostsQueryField = {
     const posts = await fastify.db.posts.findMany();
 
     return posts;
+  },
+};
+
+type CreatePostDTO = Omit<PostEntity, 'id'>;
+
+const CreatePostType = new GraphQLInputObjectType({
+  name: 'CreatePostType',
+  fields: () => ({
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    content: { type: new GraphQLNonNull(GraphQLString) },
+    userId: { type: new GraphQLNonNull(GraphQLString) },
+  }),
+});
+
+export const createPost = {
+  type: PostType,
+  args: {
+    values: { type: CreatePostType },
+  },
+  resolve: async (
+    _: any,
+    { values }: { values: CreatePostDTO },
+    fastify: FastifyInstance
+  ) => {
+    const uuidRegExp =
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+    const isValidId = uuidRegExp.test(values.userId);
+
+    if (isValidId) {
+      const newPost = await fastify.db.posts.create(values);
+      return newPost;
+    }
+
+    throw fastify.httpErrors.badRequest('Uuid is not valid');
   },
 };
